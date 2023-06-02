@@ -2,6 +2,7 @@
 build/*
 node_modules
 ecs_env_vars.json
+.vscode
 
 # Local .terraform directories
 **/.terraform/*
