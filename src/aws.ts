@@ -1,9 +1,13 @@
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import AWS from "aws-sdk";
 import dotenv from "dotenv";
 import { Tweet } from "./types/twitter";
 
-import { DynamoDB } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDB,
+  ScanInput,
+  ScanOutput,
+  UpdateItemCommand,
+} from "@aws-sdk/client-dynamodb";
 
 dotenv.config();
 
@@ -34,10 +38,10 @@ export const dynamodbDescribeTable = async (tableName: string) => {
 // export const dynamodbScanTable = async function* (
 //   tablename: string,
 //   limit: number = 25,
-//   lastEvaluatedKey?: AWS.DynamoDB.Key
+//   lastEvaluatedKey?: dynamoDb.Key
 // ) {
 //   while (true) {
-//     const params: AWS.DynamoDB.ScanInput = {
+//     const params: ScanInput = {
 //       TableName: tablename,
 //       Limit: limit,
 //     };
@@ -52,7 +56,7 @@ export const dynamodbDescribeTable = async (tableName: string) => {
 //         return;
 //       }
 
-//       lastEvaluatedKey = (result as AWS.DynamoDB.ScanOutput).LastEvaluatedKey;
+//       lastEvaluatedKey = (result as ScanOutput).LastEvaluatedKey;
 //       result.Items = result.Items?.map((item) => unmarshall(item));
 //       yield result;
 //     } catch (e) {
@@ -99,37 +103,38 @@ export const dynamodbDescribeTable = async (tableName: string) => {
 //   }
 // };
 
-// export const dynamodbUpdateTweet = async (
-//   tablename: string,
-//   tweet: Tweet,
-//   twitterId: string
-// ) => {
-//   try {
-//     const params: AWS.DynamoDB.UpdateItemInput = {
-//       TableName: tablename,
-//       Key: marshall({ twitterId: twitterId }),
-//       UpdateExpression:
-//         "set #tweets = list_append(if_not_exists(#tweets, :empty_list), :tweet), #updated = :updated",
-//       ExpressionAttributeNames: {
-//         "#tweets": "tweets",
-//         "#updated": "updated",
-//       },
-//       ExpressionAttributeValues: marshall({
-//         ":tweet": [tweet],
-//         ":updated": Date.now(),
-//         ":empty_list": [],
-//       }),
-//     };
-//     const result = await dynamoDb.updateItem(params).promise();
-//     console.log("Tweet add to record");
-//     return result;
-//   } catch (e) {
-//     if (e instanceof Error) {
-//       return e;
-//     }
-//     throw new Error("dynamodbUpdateTweet failed to updated");
-//   }
-// };
+export const dynamodbUpdateTweet = async (
+  tablename: string,
+  tweet: Tweet,
+  twitterId: string
+) => {
+  try {
+    const input = {
+      TableName: tablename,
+      Key: marshall({ twitterId: twitterId }),
+      UpdateExpression:
+        "set #tweets = list_append(if_not_exists(#tweets, :empty_list), :tweet), #updated = :updated",
+      ExpressionAttributeNames: {
+        "#tweets": "tweets",
+        "#updated": "updated",
+      },
+      ExpressionAttributeValues: marshall({
+        ":tweet": [tweet],
+        ":updated": Date.now(),
+        ":empty_list": [],
+      }),
+    };
+    const command = new UpdateItemCommand(input);
+    console.log("Tweet add to record");
+    const result = await dynamoDb.send(command);
+    return result;
+  } catch (e) {
+    if (e instanceof Error) {
+      return e;
+    }
+    throw new Error("dynamodbUpdateTweet failed to updated");
+  }
+};
 
 // export const sqsSendMessage = async (queueUrl: string, body: string) => {
 //   try {
