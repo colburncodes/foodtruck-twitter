@@ -1,7 +1,7 @@
 import {
   dynamodbDescribeTable,
-  // dynamodbScanTable,
-  // dynamodbUpdateTweet,
+  dynamodbScanTable,
+  dynamodbUpdateTweet,
   // getAllScannedResults,
   // sqsSendMessage,
 } from "./aws";
@@ -12,11 +12,11 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const init = async () => {
-  const res = await dynamodbDescribeTable("vendors");
-  console.log(res);
+  // const res = await dynamodbDescribeTable("vendors");
+  // console.log(res);
 
-  // const scan = dynamodbScanTable("vendors", 5);
-  // console.log((await scan.next()).value);
+  const scan = dynamodbScanTable("vendors", 5);
+  console.log((await scan.next()).value);
 
   // const vendors = await getAllScannedResults<Vendor>(
   //   process.env.AWS_VENDORS_TABLE_NAME ?? ""
@@ -33,7 +33,7 @@ const init = async () => {
   //     date: "06/02/23",
   //     geo: {
   //       id: "geo1",
-  //       name: "Geo location 1",
+  //       name: "Geo location 2",
   //       place_type: "place 1",
   //       full_name: "place 1",
   //       country: "USA",

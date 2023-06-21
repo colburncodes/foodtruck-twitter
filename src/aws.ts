@@ -4,6 +4,7 @@ import { Tweet } from "./types/twitter";
 
 import {
   DynamoDB,
+  ScanCommand,
   ScanInput,
   ScanOutput,
   UpdateItemCommand,
@@ -11,9 +12,6 @@ import {
 
 dotenv.config();
 
-//AWS.config.update({ region: process.env.AWS_REGION });
-
-//AWS.config.update({ region: "us-east-2" });
 // const { SQS } = AWS;
 
 const dynamoDb = new DynamoDB({ region: "us-east-2" });
@@ -35,38 +33,41 @@ export const dynamodbDescribeTable = async (tableName: string) => {
   }
 };
 
-// export const dynamodbScanTable = async function* (
-//   tablename: string,
-//   limit: number = 25,
-//   lastEvaluatedKey?: dynamoDb.Key
-// ) {
-//   while (true) {
-//     const params: ScanInput = {
-//       TableName: tablename,
-//       Limit: limit,
-//     };
+export const dynamodbScanTable = async function* (
+  tablename: string,
+  limit: number = Number(25)
+  //lastEvaluatedKey: string
+) {
+  while (true) {
+    const input = {
+      TableName: tablename,
+      Limit: limit,
+      //ExclusiveStartKey: lastEvaluatedKey
+    };
 
-//     if (lastEvaluatedKey) {
-//       params.ExclusiveStartKey = lastEvaluatedKey;
-//     }
+    // if (lastEvaluatedKey) {
+    //   input.ExclusiveStartKey = lastEvaluatedKey;
+    // }
 
-//     try {
-//       const result = await dynamoDb.scan(params).promise();
-//       if (!result.Count) {
-//         return;
-//       }
+    try {
+      const result = new ScanCommand(input);
+      const response = await dynamoDb.send(result);
+      if (!response.Count) {
+        return;
+      }
 
-//       lastEvaluatedKey = (result as ScanOutput).LastEvaluatedKey;
-//       result.Items = result.Items?.map((item) => unmarshall(item));
-//       yield result;
-//     } catch (e) {
-//       if (e instanceof Error) {
-//         throw e;
-//       }
-//       throw new Error("dynamodbScanTable unexpected error");
-//     }
-//   }
-// };
+      //lastEvaluatedKey = (result as ScanOutput).LastEvaluatedKey;
+      response.Items = response.Items?.map((item) => unmarshall(item));
+      console.log(response.Items);
+      yield result;
+    } catch (e) {
+      if (e instanceof Error) {
+        throw e;
+      }
+      throw new Error("dynamodbScanTable unexpected error");
+    }
+  }
+};
 
 // export const getAllScannedResults = async <T>(
 //   tablename: string,
