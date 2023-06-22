@@ -4,6 +4,7 @@ import { Tweet } from "./types/twitter";
 
 import {
   DynamoDB,
+  KeyType,
   ScanCommand,
   ScanInput,
   ScanOutput,
@@ -35,28 +36,33 @@ export const dynamodbDescribeTable = async (tableName: string) => {
 
 export const dynamodbScanTable = async function* (
   tablename: string,
-  limit: number = Number(25)
-  //lastEvaluatedKey: string
+  limit: number = 25
 ) {
   while (true) {
     const input = {
       TableName: tablename,
       Limit: limit,
-      //ExclusiveStartKey: lastEvaluatedKey
     };
-
-    // if (lastEvaluatedKey) {
-    //   input.ExclusiveStartKey = lastEvaluatedKey;
-    // }
 
     try {
       const result = new ScanCommand(input);
       const response = await dynamoDb.send(result);
+
+      let lastEvaluatedKey = response.LastEvaluatedKey;
+
+      if (lastEvaluatedKey) {
+        const nextScan: ScanInput = {
+          ...input,
+          ExclusiveStartKey: lastEvaluatedKey,
+        };
+
+        nextScan.ExclusiveStartKey = (result as ScanOutput).LastEvaluatedKey;
+      }
+
       if (!response.Count) {
         return;
       }
 
-      //lastEvaluatedKey = (result as ScanOutput).LastEvaluatedKey;
       response.Items = response.Items?.map((item) => unmarshall(item));
       console.log(response.Items);
       yield result;
