@@ -2,7 +2,7 @@ import {
   dynamodbDescribeTable,
   dynamodbScanTable,
   dynamodbUpdateTweet,
-  // getAllScannedResults,
+  getAllScannedResults,
   // sqsSendMessage,
 } from "./aws";
 import { Vendor } from "./types/vendor";
@@ -15,13 +15,13 @@ const init = async () => {
   // const res = await dynamodbDescribeTable("vendors");
   // console.log(res);
 
-  const scan = dynamodbScanTable("vendors", 5);
-  console.log((await scan.next()).value);
+  // const scan = dynamodbScanTable("vendors", 5);
+  // console.log((await scan.next()).value);
 
-  // const vendors = await getAllScannedResults<Vendor>(
-  //   process.env.AWS_VENDORS_TABLE_NAME ?? ""
-  // );
-  // console.log("Vendors ", vendors);
+  const vendors = await getAllScannedResults<Vendor>(
+    process.env.AWS_VENDORS_TABLE_NAME ?? ""
+  );
+  console.log("Vendors ", vendors);
 
   // const tweet = await dynamodbUpdateTweet(
   //   process.env.AWS_VENDORS_TABLE_NAME ?? "",

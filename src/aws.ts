@@ -4,12 +4,11 @@ import { Tweet } from "./types/twitter";
 
 import {
   DynamoDB,
-  KeyType,
   ScanCommand,
   ScanInput,
   ScanOutput,
-  UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
+import { Key } from "aws-sdk/clients/dynamodb";
 
 dotenv.config();
 
@@ -36,7 +35,8 @@ export const dynamodbDescribeTable = async (tableName: string) => {
 
 export const dynamodbScanTable = async function* (
   tablename: string,
-  limit: number = 25
+  limit: number = 25,
+  lastEvalKey?: Key
 ) {
   while (true) {
     const input = {
@@ -62,10 +62,8 @@ export const dynamodbScanTable = async function* (
       if (!response.Count) {
         return;
       }
-
       response.Items = response.Items?.map((item) => unmarshall(item));
-      console.log(response.Items);
-      yield result;
+      yield response;
     } catch (e) {
       if (e instanceof Error) {
         throw e;
@@ -75,40 +73,41 @@ export const dynamodbScanTable = async function* (
   }
 };
 
-// export const getAllScannedResults = async <T>(
-//   tablename: string,
-//   limit: number = 25
-// ) => {
-//   try {
-//     await dynamodbDescribeTable(tablename);
+export const getAllScannedResults = async <T>(
+  tablename: string,
+  limit: number = 25
+) => {
+  try {
+    await dynamodbDescribeTable(tablename);
 
-//     const scanTable = await dynamodbScanTable(tablename, limit);
-//     const results: T[] = [];
+    const scanTable = await dynamodbScanTable(tablename, limit);
 
-//     let isDone = false;
-//     while (!isDone) {
-//       const iterator = await scanTable.next();
+    const results: T[] = [];
 
-//       if (!iterator) {
-//         throw new Error("No iterator returned");
-//       }
+    let isDone = false;
+    while (!isDone) {
+      const iterator = await scanTable.next();
 
-//       if (iterator.done || !iterator.value.LastEvaluatedKey) {
-//         isDone = true;
-//       }
+      if (!iterator) {
+        throw new Error("No iterator returned");
+      }
 
-//       if (iterator.value) {
-//         iterator.value.Items!.forEach((result: any) => results.push(result));
-//       }
-//     }
-//     return results;
-//   } catch (e) {
-//     if (e instanceof Error) {
-//       throw e;
-//     }
-//     throw new Error("getAllScannedResults unexpected error");
-//   }
-// };
+      if (iterator.done || !iterator.value.LastEvaluatedKey) {
+        isDone = true;
+      }
+
+      if (iterator.value) {
+        iterator.value.Items!.forEach((result: any) => results.push(result));
+      }
+    }
+    return results;
+  } catch (e) {
+    if (e instanceof Error) {
+      throw e;
+    }
+    throw new Error("getAllScannedResults unexpected error");
+  }
+};
 
 export const dynamodbUpdateTweet = async (
   tablename: string,
@@ -131,9 +130,9 @@ export const dynamodbUpdateTweet = async (
         ":empty_list": [],
       }),
     };
-    const command = new UpdateItemCommand(input);
-    console.log("Tweet add to record");
-    const result = await dynamoDb.send(command);
+
+    const result = await dynamoDb.updateItem(input);
+    console.log("Tweet update to record", result);
     return result;
   } catch (e) {
     if (e instanceof Error) {
